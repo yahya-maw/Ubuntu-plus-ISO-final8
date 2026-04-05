@@ -1,0 +1,41 @@
+name: Ultimate No-Error Build
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧹 Extreme Space Clear
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo docker image prune -a -f
+
+      - name: 🛠️ Setup Tools
+        run: sudo apt-get update && sudo apt-get install -y xorriso squashfs-tools wget curl p7zip-full
+
+      - name: 💿 Core ISO Process (Safe Way)
+        run: |
+          # تحميل النسخة برابط Mirror سريع
+          curl -L -o base.iso https://mirrors.kernel.org/ubuntu-releases/24.04/ubuntu-24.04-desktop-amd64.iso
+          
+          # فك الـ ISO باستخدام 7zip (عشان نتجنب Error 32 تماماً)
+          mkdir -p x
+          7z x base.iso -ox/
+          rm base.iso
+          
+          # تنفيذ سكريبت التخصيص
+          chmod +x build.sh
+          sudo -E ./build.sh
+          
+          # تجميع الـ ISO النهائي
+          sudo xorriso -as mkisofs -r -V "Ubuntu-Plus-Ultimate" -o Ubuntu-Plus-Final.iso x/
+
+      - name: 📤 Upload Finished ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ubuntu-Plus-Final-ISO
+          path: Ubuntu-Plus-Final.iso
+          retention-days: 90
